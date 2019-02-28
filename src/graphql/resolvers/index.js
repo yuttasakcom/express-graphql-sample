@@ -15,6 +15,17 @@ const transformEvent = event => {
   }
 }
 
+const transformBooking = booking => {
+  return {
+    ...booking._doc,
+    _id: booking.id,
+    user: user.bind(this, booking._doc.user),
+    event: singleEvent.bind(this, booking._doc.event),
+    createdAt: dateToString(booking.createdAt),
+    updatedAt: dateToString(booking.updatedAt)
+  }
+}
+
 const events = async eventIds => {
   try {
     const events = await Event.find({ _id: { $in: eventIds } })
@@ -54,14 +65,7 @@ module.exports = {
     try {
       const booking = await Booking.find()
       return booking.map(booking => {
-        return {
-          ...booking._doc,
-          _id: booking.id,
-          user: user.bind(this, booking._doc.user),
-          event: singleEvent.bind(this, booking._doc.event),
-          createdAt: dateToString(booking.createdAt),
-          updatedAt: dateToString(booking.updatedAt)
-        }
+        return transformBooking(booking)
       })
     } catch (err) {
       throw err
@@ -107,11 +111,12 @@ module.exports = {
   createUser: async args => {
     try {
       const existingUser = await User.findOne({ email: args.userInput.email })
+
       if (existingUser) {
         throw new Error('User exists already.')
       }
-      const hashedPassword = await bcrypt.hash(args.userInput.password, 12)
 
+      const hashedPassword = await bcrypt.hash(args.userInput.password, 12)
       const user = new User({
         email: args.userInput.email,
         password: hashedPassword
@@ -130,16 +135,8 @@ module.exports = {
       user: '5c777b827d44f350bcb48b43',
       event: fetchedEvent
     })
-
     const result = await booking.save()
-    return {
-      ...result._doc,
-      _id: result.id,
-      user: user.bind(this, result._doc.user),
-      event: singleEvent.bind(this, result._doc.event),
-      createdAt: dateToString(result.createdAt),
-      updatedAt: dateToString(result.updatedAt)
-    }
+    return transformBooking(result)
   },
   cancelBooking: async args => {
     try {
