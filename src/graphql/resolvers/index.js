@@ -5,7 +5,7 @@ const bookingResolver = require('./booking')
 const rootResolver = {
   ...authResolver,
   ...eventsResolver,
-  ...bookingResolver
+  ...bookingResolver,
 }
 
 module.exports = rootResolver

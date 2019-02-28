@@ -12,8 +12,10 @@ mongoose.connection
   .catch(err => console.log('MongoDB Error: ', err))
 
 const app = express()
+const isAuth = require('./middleware/is-auth')
 
 app.use(express.json())
+app.use(isAuth)
 
 const schema = require('./graphql/schema')
 const rootValue = require('./graphql/resolvers')
@@ -23,7 +25,7 @@ app.use(
   graphqlHTTP({
     schema,
     rootValue,
-    graphiql: true
+    graphiql: true,
   })
 )
 
