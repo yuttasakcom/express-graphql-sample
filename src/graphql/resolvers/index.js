@@ -4,15 +4,23 @@ const Event = require('../../models/event')
 const User = require('../../models/user')
 const Booking = require('../../models/booking')
 
+const { dateToString } = require('../../helpers/date')
+
+const transformEvent = event => {
+  return {
+    ...event._doc,
+    _id: event.id,
+    date: dateToString(event._doc.date),
+    creator: user.bind(this, event.creator)
+  }
+}
+
 const events = async eventIds => {
   try {
     const events = await Event.find({ _id: { $in: eventIds } })
-    return events.map(event => ({
-      ...event._doc,
-      _id: event.id,
-      date: new Date(event._doc.date).toISOString(),
-      creator: user.bind(this, event.creator)
-    }))
+    return events.map(event => {
+      return transformEvent(event)
+    })
   } catch (err) {
     throw err
   }
@@ -21,11 +29,7 @@ const events = async eventIds => {
 const singleEvent = async eventId => {
   try {
     const event = await Event.findById(eventId)
-    return {
-      ...event._doc,
-      _id: event.id,
-      creator: user.bind(this, event.creator)
-    }
+    return transformEvent(event)
   } catch (err) {
     throw err
   }
@@ -55,8 +59,8 @@ module.exports = {
           _id: booking.id,
           user: user.bind(this, booking._doc.user),
           event: singleEvent.bind(this, booking._doc.event),
-          createdAt: new Date(booking.createdAt).toISOString(),
-          updatedAt: new Date(booking.updatedAt).toISOString()
+          createdAt: dateToString(booking.createdAt),
+          updatedAt: dateToString(booking.updatedAt)
         }
       })
     } catch (err) {
@@ -66,12 +70,9 @@ module.exports = {
   events: async () => {
     try {
       const events = await Event.find()
-      return events.map(event => ({
-        ...event._doc,
-        _id: event.id,
-        date: new Date(event._doc.date).toISOString(),
-        creator: user.bind(this, event._doc.creator)
-      }))
+      return events.map(event => {
+        return transformEvent(event)
+      })
     } catch (err) {
       throw err
     }
@@ -88,14 +89,7 @@ module.exports = {
 
       let createdEvent
       const result = await event.save()
-
-      createdEvent = {
-        ...result._doc,
-        _id: result._doc._id.toString(),
-        date: new Date(event._doc.date).toISOString(),
-        creator: user.bind(this, result._doc.creator)
-      }
-
+      createdEvent = transformEvent(result)
       const creator = await User.findById('5c777b827d44f350bcb48b43')
 
       if (!creator) {
@@ -143,18 +137,14 @@ module.exports = {
       _id: result.id,
       user: user.bind(this, result._doc.user),
       event: singleEvent.bind(this, result._doc.event),
-      createdAt: new Date(result.createdAt).toISOString(),
-      updatedAt: new Date(result.updatedAt).toISOString()
+      createdAt: dateToString(result.createdAt),
+      updatedAt: dateToString(result.updatedAt)
     }
   },
   cancelBooking: async args => {
     try {
       const booking = await Booking.findById(args.bookingId).populate('event')
-      const event = {
-        ...booking.event._doc,
-        _id: booking.event.id,
-        creator: user.bind(this, booking.event._doc.creator)
-      }
+      const event = transformEvent(booking.event)
       await Booking.deleteOne({ _id: args.bookingId })
       return event
     } catch (err) {
